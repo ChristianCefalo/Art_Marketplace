@@ -6,8 +6,12 @@
    - Clone this repository and open the `Art_Marketplace` directory in Android Studio (Giraffe or newer).
 
 2. **Android Studio Configuration**
+
    - Use Android Studio Koala (2024.1.1) or newer so Gradle 8.7 and Android Gradle Plugin 8.5.2 are available during sync.
    - Use a device or emulator running Android 7.0 (API 24) or higher.
+
+
+
 
 3. **Firebase Configuration**
    - Create a Firebase project in the [Firebase console](https://console.firebase.google.com/).
@@ -21,7 +25,11 @@
 
 ### Build Troubleshooting
 
+codex/create-android-java-+-xml-project-scaffold-jz1tgt
 - If Gradle sync fails with "plugin not found" errors, double-check that Android Studio downloaded the Android Gradle Plugin 8.5.2 patch (Help ▸ Check for Updates).
+
+
+
 - Proxy-restricted networks may block Gradle from fetching dependencies; configure Android Studio's proxy settings under **Appearance & Behavior ▸ System Settings ▸ HTTP Proxy** if needed.
 
 ## Role Selection Navigation
@@ -73,6 +81,7 @@
 - Expand the checkout flow with real payment provider integration when available.
 - Add instrumentation/UI tests to cover the chat handoff and order state transitions.
 
+
 ## Build & Firebase
 
 - This project uses Kotlin DSL (`*.kts`) for all Gradle scripts.
@@ -81,3 +90,4 @@
   1. Android Studio ▸ **File ▸ Sync Project with Gradle Files**
   2. **Build ▸ Rebuild Project**
   3. Press **Run ▶** and choose a device/emulator
+
