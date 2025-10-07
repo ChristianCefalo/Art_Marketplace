@@ -12,7 +12,37 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ArtMarketplace">
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.artmarketplace.ui.provider.ProviderOrdersActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.provider.EditListingActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.provider.CreateListingActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.provider.ProviderHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.customer.ArtDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.customer.ReceiptActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.customer.CheckoutActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.customer.CartActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.customer.CustomerHomeActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.chat.ChatActivity"
+            android:exported="false" />
+        <activity
+            android:name="com.example.artmarketplace.ui.RoleSelectActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
