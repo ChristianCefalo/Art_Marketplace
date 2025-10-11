@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.artmarketplace" />
+                  <option name="mobileSdkAppId" value="1:99893562467:android:afdcfa000b03c365cb7c56" />
+                  <option name="projectId" value="art-marketplace-99548" />
+                  <option name="projectNumber" value="99893562467" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

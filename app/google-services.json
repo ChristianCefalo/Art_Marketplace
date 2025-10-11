@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "99893562467",
+    "project_id": "art-marketplace-99548",
+    "storage_bucket": "art-marketplace-99548.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99893562467:android:afdcfa000b03c365cb7c56",
+        "android_client_info": {
+          "package_name": "com.example.artmarketplace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSqqxWfLH1guEPiW06hjua6MLL2nlF1ys"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
