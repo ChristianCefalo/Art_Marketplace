@@ -1,11 +1,12 @@
 package com.example.artmarketplace;
+import com.google.firebase.Timestamp;
 
 public class Message {
     public String id;
-    public String sender;   // "user","ai","system"
-    public String prompt;   // user/system text
-    public String response; // AI reply (extension writes this)
-    public long createdAt;  // optional local use
+    public String prompt;
+    public String response;
+    public String sender;
+    public Timestamp createdAt;
 
-    public Message() {} // Firestore needs empty ctor
+    public Message() {} // Firestore needs empty constructor
 }

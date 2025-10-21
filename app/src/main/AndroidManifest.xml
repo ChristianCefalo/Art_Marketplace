@@ -19,7 +19,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity android:name=".ChatActivity" android:exported="false"/>
         <activity android:name=".RegisterActivity" />
         <activity android:name=".CustomerHomeActivity" />
         <activity android:name=".ProviderHomeActivity" />
