@@ -16,7 +16,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 
 public class ListingDetailsActivity extends AppCompatActivity {
@@ -59,11 +61,12 @@ public class ListingDetailsActivity extends AppCompatActivity {
                     if (!d.exists()) { finish(); return; }
                     String title = d.getString("title");
                     Double price = d.getDouble("price");
-                    List<String> tags = (List<String>) d.get("tags");
+                    //List<String> tags = (List<String>) d.get("tags");
+                    List<String> tags = Arrays.asList(Objects.requireNonNull(d.getString("tags")).split("\\s*,\\s*"));
                     String desc = d.getString("description");
                     String ownerId = d.getString("ownerId");
-                    List<String> imgs = (List<String>) d.get("imageUrls");
-
+                    //List<String> imgs = (List<String>) d.get("imageUrls");
+                    String imgs = d.getString("imageUrls");
                     tvTitle.setText(title == null ? "Untitled" : title);
                     tvPrice.setText(price == null ? "" :
                             "$" + String.format(java.util.Locale.US, "%.2f", price));
@@ -79,7 +82,7 @@ public class ListingDetailsActivity extends AppCompatActivity {
                     }
 
                     if (imgs != null && !imgs.isEmpty()) {
-                        String url = imgs.get(0);
+                        String url = imgs;
                         // very small loader without libs
                         Executors.newSingleThreadExecutor().execute(() -> {
                             try {
