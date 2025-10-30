@@ -1,5 +1,7 @@
 package com.example.artmarketplace;
+
 import com.google.firebase.Timestamp;
+import java.util.Map;
 
 public class Message {
     public String id;
@@ -8,5 +10,9 @@ public class Message {
     public String sender;
     public Timestamp createdAt;
 
-    public Message() {} // Firestore needs empty constructor
+    // Optional: attachment map {url, name, mime, size?}
+    public Map<String, Object> attachment;
+
+    public Message() {}
 }
+

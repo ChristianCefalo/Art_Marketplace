@@ -23,6 +23,7 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".CustomerHomeActivity" />
         <activity android:name=".ProviderHomeActivity" />
+        <activity android:name=".ConversationsActivity" />
 
 
     </application>

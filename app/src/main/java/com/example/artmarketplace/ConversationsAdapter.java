@@ -1,36 +1,48 @@
 package com.example.artmarketplace;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.List;
 
 class ConversationsAdapter extends RecyclerView.Adapter<ConversationsAdapter.VH> {
 
-    interface OnClick { void open(@NonNull String convId); } // ← no title arg
+    interface OnOpen   { void open(@NonNull String convId); }
+    interface OnRename{ void rename(@NonNull DocumentSnapshot doc, @NonNull String newTitle); }
+    interface OnDelete{ void delete(@NonNull DocumentSnapshot doc); }
 
     private List<DocumentSnapshot> data;
-    private final OnClick onClick;
+    private final OnOpen onOpen;
+    private final OnRename onRename;
+    private final OnDelete onDelete;
 
-    ConversationsAdapter(List<DocumentSnapshot> d, OnClick oc) {
+    ConversationsAdapter(List<DocumentSnapshot> d,
+                         OnOpen o,
+                         OnRename r,
+                         OnDelete del) {
         data = (d == null) ? new ArrayList<>() : d;
-        onClick = oc;
+        onOpen = o;
+        onRename = r;
+        onDelete = del;
     }
 
     void submit(List<DocumentSnapshot> d) {
@@ -40,10 +52,12 @@ class ConversationsAdapter extends RecyclerView.Adapter<ConversationsAdapter.VH>
 
     static class VH extends RecyclerView.ViewHolder {
         TextView title, snippet;
+        ImageButton overflow;
         VH(@NonNull View itemView) {
             super(itemView);
-            title = itemView.findViewById(R.id.tvTitle);
-            snippet = itemView.findViewById(R.id.tvSnippet);
+            title    = itemView.findViewById(R.id.tvTitle);
+            snippet  = itemView.findViewById(R.id.tvSnippet);
+            overflow = itemView.findViewById(R.id.btnOverflow);
         }
     }
 
@@ -58,24 +72,25 @@ class ConversationsAdapter extends RecyclerView.Adapter<ConversationsAdapter.VH>
     public void onBindViewHolder(@NonNull VH h, int position) {
         final DocumentSnapshot doc = data.get(position);
 
-        final String rawTitle    = doc.getString("title");
-        final String safeTitle   = (rawTitle == null || rawTitle.trim().isEmpty()) ? "Untitled" : rawTitle.trim();
-        final String last        = doc.getString("lastMessage");
-        final String safeSnippet = (last == null) ? "" : last;
+        final String rawTitle  = doc.getString("title");
+        final String safeTitle = (rawTitle == null || rawTitle.trim().isEmpty()) ? "Untitled" : rawTitle.trim();
+        final String last      = doc.getString("lastMessage");
+        final String safeLast  = (last == null) ? "" : last;
 
         h.title.setText(safeTitle);
-        h.snippet.setText(safeSnippet);
+        h.snippet.setText(safeLast);
 
-        h.itemView.setOnClickListener(view -> onClick.open(doc.getId())); // ← only convId
+        // Open chat on row tap
+        h.itemView.setOnClickListener(v -> onOpen.open(doc.getId()));
 
-        h.itemView.setOnLongClickListener(view -> { showMenu(view, doc); return true; });
+        // Overflow → menu (Rename/Delete), anchored to the title (higher in the row)
+        if (h.overflow != null) {
+            h.overflow.setOnClickListener(v -> showMenu(v.getContext(), h.title, doc));
+        }
     }
 
-    private void showMenu(@NonNull View anchor, @NonNull DocumentSnapshot doc) {
-        Context c = anchor.getContext();
-        PopupMenu m = new PopupMenu(c, anchor);
-
-        // Give items stable IDs so we don't rely on nullable titles
+    private void showMenu(@NonNull Context c, @NonNull View anchor, @NonNull DocumentSnapshot doc) {
+        PopupMenu m = new PopupMenu(c, anchor, Gravity.TOP | Gravity.END);
         final int ID_RENAME = 1;
         final int ID_DELETE = 2;
 
@@ -83,55 +98,104 @@ class ConversationsAdapter extends RecyclerView.Adapter<ConversationsAdapter.VH>
         m.getMenu().add(0, ID_DELETE, 1, "Delete");
 
         m.setOnMenuItemClickListener(item -> {
-            switch (item.getItemId()) {
-                case ID_DELETE:
-                    deleteConversation(doc);
-                    return true;
-                case ID_RENAME:
-                    renameConversation(c, doc);
-                    return true;
-                default:
-                    return false;
+            int id = item.getItemId();
+            if (id == ID_DELETE) {
+                onDelete.delete(doc);
+                return true;
             }
+            if (id == ID_RENAME) {
+                showRenamePopup(c, anchor, doc);
+                return true;
+            }
+            return false;
         });
-
         m.show();
     }
 
+    /** Rename as an anchored PopupWindow (no dialog jump/flicker). */
+    private void showRenamePopup(@NonNull Context c, @NonNull View anchor, @NonNull DocumentSnapshot doc) {
+        // Build content view
+        LinearLayout root = new LinearLayout(c);
+        root.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(c, 16);
+        root.setPadding(pad, pad, pad, pad);
+        root.setBackground(new ColorDrawable(Color.WHITE));
+        root.setElevation(dp(c, 4));
 
-    private void deleteConversation(@NonNull DocumentSnapshot doc) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        CollectionReference msgs = doc.getReference().collection("messages");
+        TextView title = new TextView(c);
+        title.setText("Rename chat");
+        title.setTextSize(16);
+        title.setTypeface(title.getTypeface(), Typeface.BOLD);
+        root.addView(title);
 
-        msgs.limit(50).get().addOnSuccessListener(q -> {
-            if (q.isEmpty()) {
-                doc.getReference().delete();
-            } else {
-                WriteBatch batch = db.batch();
-                for (DocumentSnapshot x : q) batch.delete(x.getReference());
-                batch.commit().addOnSuccessListener(ignored -> deleteConversation(doc));
+        EditText input = new EditText(c);
+        String current = doc.getString("title");
+        input.setText(current == null ? "" : current);
+        LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ip.topMargin = dp(c, 8);
+        root.addView(input, ip);
+
+        LinearLayout actions = new LinearLayout(c);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setGravity(Gravity.END);
+        LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        ap.topMargin = dp(c, 12);
+
+        TextView cancel = new TextView(c);
+        cancel.setText("Cancel");
+        cancel.setPadding(dp(c, 12), dp(c, 8), dp(c, 12), dp(c, 8));
+
+        TextView save = new TextView(c);
+        save.setText("Save");
+        save.setPadding(dp(c, 12), dp(c, 8), dp(c, 12), dp(c, 8));
+        save.setTextColor(0xFF6750A4); // purple-ish
+
+        actions.addView(cancel);
+        actions.addView(save);
+        root.addView(actions, ap);
+
+        // PRE-MEASURE to get real width (so we can position without a second pass)
+        int screenW = c.getResources().getDisplayMetrics().widthPixels;
+        int maxWidth = (int) (screenW * 0.9f);
+        int widthSpec = View.MeasureSpec.makeMeasureSpec(maxWidth, View.MeasureSpec.AT_MOST);
+        int heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        root.measure(widthSpec, heightSpec);
+        int contentW = Math.min(root.getMeasuredWidth(), maxWidth);
+
+        // Create popup with deterministic width
+        final PopupWindow pw = new PopupWindow(root,
+                contentW,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                true /* focusable */);
+        pw.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        pw.setOutsideTouchable(true);
+        pw.setInputMethodMode(PopupWindow.INPUT_METHOD_NEEDED);
+        pw.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+        // Compute target position: centered, ~96dp from top (tweak if needed)
+        int x = (screenW - contentW) / 2;
+        int y = dp(c, 96);
+
+        // Show immediately at desired location — no jump
+        pw.showAtLocation(anchor, Gravity.TOP | Gravity.START, x, y);
+
+        cancel.setOnClickListener(v -> pw.dismiss());
+        save.setOnClickListener(v -> {
+            String newTitle = input.getText().toString().trim();
+            if (newTitle.isEmpty()) {
+                Toast.makeText(c, "Title can't be empty.", Toast.LENGTH_SHORT).show();
+                return;
             }
+            pw.dismiss();
+            onRename.rename(doc, newTitle);
         });
     }
 
-    private void renameConversation(@NonNull Context c, @NonNull DocumentSnapshot doc) {
-        EditText et = new EditText(c);
-        String current = doc.getString("title");
-        et.setText(current == null ? "" : current);
-
-        new AlertDialog.Builder(c)
-                .setTitle("Rename chat")
-                .setView(et)
-                .setPositiveButton("Save", (dlg, which) -> {
-                    String newTitle = et.getText().toString().trim();
-                    if (newTitle.isEmpty()) {
-                        Toast.makeText(c, "Title can't be empty.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    doc.getReference().update("title", newTitle);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+    private static int dp(Context c, int v) {
+        float d = c.getResources().getDisplayMetrics().density;
+        return (int) (v * d + 0.5f);
     }
 
     @Override public int getItemCount() { return (data == null) ? 0 : data.size(); }

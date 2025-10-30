@@ -1,16 +1,18 @@
 package com.example.artmarketplace;
 
-
-
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final int USER = 1, AI = 2;
@@ -38,9 +40,27 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int pos) {
         VH vh = (VH) holder;
         Message m = data.get(pos);
-        String body = "user".equals(m.sender)
-                ? (m.prompt == null ? "" : m.prompt)
-                : (m.response == null ? "" : m.response);
+
+        String body;
+
+        if (m.attachment != null && m.attachment.get("url") != null) {
+            String name = String.valueOf(m.attachment.get("name"));
+            if (name == null || name.trim().isEmpty()) name = "attachment";
+            body = "[Attachment] " + name;
+            String url = String.valueOf(m.attachment.get("url"));
+            vh.itemView.setOnClickListener(v -> {
+                try {
+                    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    v.getContext().startActivity(i);
+                } catch (Exception ignore) { }
+            });
+        } else {
+            body = "user".equals(m.sender)
+                    ? (m.prompt == null ? "" : m.prompt)
+                    : (m.response == null ? "" : m.response);
+            vh.itemView.setOnClickListener(null);
+        }
+
         vh.tv.setText(body);
     }
 
@@ -54,5 +74,3 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         VH(@NonNull View v) { super(v); tv = v.findViewById(R.id.tv); }
     }
 }
-
-
