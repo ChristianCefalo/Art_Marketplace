@@ -23,7 +23,9 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".CustomerHomeActivity" />
         <activity android:name=".ProviderHomeActivity" />
-
+        <activity android:name=".CreateListingActivity" />
+        <activity android:name=".BrowseListingsActivity" />
+        <activity android:name=".ListingDetailsActivity" />
 
     </application>
 </manifest>
