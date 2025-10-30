@@ -14,7 +14,9 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 class ListingsAdapter extends RecyclerView.Adapter<ListingsAdapter.VH> {
 
@@ -53,8 +55,9 @@ class ListingsAdapter extends RecyclerView.Adapter<ListingsAdapter.VH> {
         String title = d.getString("title");
         if (title == null || title.trim().isEmpty()) title = "Untitled";
 
-        List<String> tags = (List<String>) d.get("tags");
-        String tagsStr = (tags == null || tags.isEmpty()) ? "" : android.text.TextUtils.join(", ", tags);
+        List<String> tags = Arrays.asList(Objects.requireNonNull(d.getString("tags")).split("\\s*,\\s*"));
+        // List<String> tags2 = (List<String>) d.get("tags");
+        String tagsStr = (tags.isEmpty()) ? "" : android.text.TextUtils.join(", ", tags);
 
         Double price = d.getDouble("price");
         String priceStr = (price == null) ? "" : "$" + String.format(java.util.Locale.US, "%.2f", price);
@@ -99,8 +102,8 @@ class ListingsAdapter extends RecyclerView.Adapter<ListingsAdapter.VH> {
                                     "title", t,
                                     "titleLower", t.toLowerCase(java.util.Locale.US),
                                     "updatedAt", FieldValue.serverTimestamp(),
-                                    "searchTokens", SearchUtil.buildTokens(t, (List<String>) doc.get("tags"))
-                            );
+                                    "searchTokens", SearchUtil.buildTokens(t, (Arrays.asList(Objects.requireNonNull(doc.getString("tags")).split("\\s*,\\s*")))
+                            ));
                         })
                         .setNegativeButton("Cancel", null)
                         .show();

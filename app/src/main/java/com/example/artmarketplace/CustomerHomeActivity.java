@@ -1,50 +1,113 @@
 package com.example.artmarketplace;
 
-
+import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.provider.ContactsContract;
-import android.util.Log;
-import android.widget.TextView;
+import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.*;
-import com.google.firebase.firestore.*;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
+
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
+
+
+import java.util.ArrayList;
 
 
 public class CustomerHomeActivity extends AppCompatActivity {
+
     private FirebaseAuth auth;
     private FirebaseFirestore db;
-    private DatabaseReference mDatabase;
-    private TextView artList;
+
+    private RecyclerView rv;
+    private Button btnBrowse, btnLogout;
+
+    private ListingsAdapter adapter;
+    private ListenerRegistration reg;
+    private String uid;
+
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_customer_home);
+
+        rv = findViewById(R.id.rvListings);
+        btnBrowse = findViewById(R.id.btnBrowse);
+        btnLogout = findViewById(R.id.btnLogout);
+
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new ListingsAdapter(new ArrayList<>(), this::openDetailsOrEdit, this::deleteDoc);
+        rv.setAdapter(adapter);
+
         auth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
-        mDatabase = FirebaseDatabase.getInstance().getReference();
-        artList = findViewById(R.id.artList);
-        String artId = auth.getUid();
-        mDatabase.child("art").child(artId).get().addOnCompleteListener(new OnCompleteListener<DataSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DataSnapshot> task) {
-                if (!task.isSuccessful()) {
-                    Log.e("firebase", "Error getting data", task.getException());
-                    artList.setText(task.getException().toString());
-                }
-                else {
-                    Log.d("firebase", String.valueOf(task.getResult().getValue()));
-                    artList.setText(task.getResult().getValue().toString());
-                }
-            }
+        db   = FirebaseFirestore.getInstance();
+
+        FirebaseUser user = auth.getCurrentUser();
+        if (user == null) { finishWith("Please sign in."); return; }
+        uid = user.getUid();
+
+        // Verify provider role
+        db.collection("users").document(uid).get()
+                .addOnSuccessListener(snap -> {
+                    if (!"customer".equals(snap.getString("role"))) {
+                        finishWith("Customer only.");
+                        return;
+                    }
+                    startListening();
+                })
+                .addOnFailureListener(e -> finishWith("Failed to verify role: " + e.getMessage()));
+
+        btnBrowse.setOnClickListener(v -> {
+            Intent i = new Intent(this, BrowseListingsActivity.class);
+            startActivity(i);
         });
+
+        btnLogout.setOnClickListener(v -> {
+            auth.signOut();
+            Intent i = new Intent(this, LoginActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+            finish();
+        });
+    }
+
+    private void startListening() {
+        reg = db.collection("listings")
+                .whereEqualTo("ownerId", uid)
+                .orderBy("updatedAt", Query.Direction.DESCENDING)
+                .addSnapshotListener(this, (qs, e) -> {
+                    if (e != null || qs == null) return;
+                    adapter.submit(qs.getDocuments());
+                });
+    }
+
+    private void openDetailsOrEdit(DocumentSnapshot doc) {
+        // Tap opens edit
+        Intent i = new Intent(this, CreateListingActivity.class);
+        i.putExtra("EDIT_ID", doc.getId());
+        startActivity(i);
+    }
+
+    private void deleteDoc(DocumentSnapshot doc) {
+        doc.getReference().delete()
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Delete failed: " + e.getMessage(), Toast.LENGTH_LONG).show());
+    }
+
+    private void finishWith(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+        finish();
+    }
+
+    @Override protected void onDestroy() {
+        super.onDestroy();
+        if (reg != null) { reg.remove(); reg = null; }
     }
 }
