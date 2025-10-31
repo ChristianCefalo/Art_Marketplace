@@ -6,13 +6,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.ArtMarketplace">
 
-        <activity
-            android:name=".LoginActivity"
+        <activity android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,9 +23,9 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".CustomerHomeActivity" />
         <activity android:name=".ProviderHomeActivity" />
-        <activity
-            android:name=".ui.buyer.SearchDemoActivity"
-            android:exported="true" />
+        <activity android:name=".CreateListingActivity" />
+        <activity android:name=".BrowseListingsActivity" />
+        <activity android:name=".ListingDetailsActivity" />
 
     </application>
 </manifest>
