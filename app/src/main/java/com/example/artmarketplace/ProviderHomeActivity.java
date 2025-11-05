@@ -13,14 +13,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
-
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
-
 import java.util.ArrayList;
-
 
 public class ProviderHomeActivity extends AppCompatActivity {
 
@@ -44,7 +41,10 @@ public class ProviderHomeActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.btnLogout);
 
         rv.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new ListingsAdapter(new ArrayList<>(), this::openDetailsOrEdit, this::deleteDoc);
+
+        adapter = new ListingsAdapter(new ArrayList<>(),
+                doc -> ViewListingActivity.launch(this, doc.getId()),  // tap → view details
+                this::deleteDoc);
         rv.setAdapter(adapter);
 
         auth = FirebaseAuth.getInstance();
@@ -54,7 +54,6 @@ public class ProviderHomeActivity extends AppCompatActivity {
         if (user == null) { finishWith("Please sign in."); return; }
         uid = user.getUid();
 
-        // Verify provider role
         db.collection("users").document(uid).get()
                 .addOnSuccessListener(snap -> {
                     if (!"provider".equals(snap.getString("role"))) {
@@ -65,12 +64,11 @@ public class ProviderHomeActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> finishWith("Failed to verify role: " + e.getMessage()));
 
-        btnAdd.setOnClickListener(v -> startActivity(new Intent(this, CreateListingActivity.class)));
+        btnAdd.setOnClickListener(v ->
+                startActivity(new Intent(this, CreateListingActivity.class)));
 
-        btnBrowse.setOnClickListener(v -> {
-            Intent i = new Intent(this, BrowseListingsActivity.class);
-            startActivity(i);
-        });
+        btnBrowse.setOnClickListener(v ->
+                startActivity(new Intent(this, BrowseListingsActivity.class)));
 
         btnLogout.setOnClickListener(v -> {
             auth.signOut();
@@ -89,13 +87,6 @@ public class ProviderHomeActivity extends AppCompatActivity {
                     if (e != null || qs == null) return;
                     adapter.submit(qs.getDocuments());
                 });
-    }
-
-    private void openDetailsOrEdit(DocumentSnapshot doc) {
-        // Tap opens edit
-        Intent i = new Intent(this, CreateListingActivity.class);
-        i.putExtra("EDIT_ID", doc.getId());
-        startActivity(i);
     }
 
     private void deleteDoc(DocumentSnapshot doc) {

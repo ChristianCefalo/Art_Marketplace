@@ -24,6 +24,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ViewListingActivity extends AppCompatActivity {
+    public static void launch(android.content.Context c, String id) {
+        android.content.Intent i = new android.content.Intent(c, ViewListingActivity.class);
+        i.putExtra("LISTING_ID", id);
+        c.startActivity(i);
+    }
 
     private FirebaseFirestore db;
 
@@ -66,6 +71,7 @@ public class ViewListingActivity extends AppCompatActivity {
     }
 
     private void loadListing() {
+        android.util.Log.d("ViewListing", "Opening listing: " + listingId);
         db.collection("listings").document(listingId).get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) { Toast.makeText(this, "Listing not found", Toast.LENGTH_LONG).show(); finish(); return; }
@@ -82,7 +88,16 @@ public class ViewListingActivity extends AppCompatActivity {
 
                     String desc = doc.getString("description");
                     tvDesc.setText(desc == null ? "" : desc);
-
+                    String tagsStr = "";
+                    Object t = doc.get("tags");
+                    if (t instanceof java.util.List) {
+                        @SuppressWarnings("unchecked")
+                        java.util.List<String> tagsList = (java.util.List<String>) t;
+                        tagsStr = (tagsList == null || tagsList.isEmpty()) ? "" : android.text.TextUtils.join(", ", tagsList);
+                    } else if (t instanceof String) {
+                        tagsStr = ((String) t).trim(); // already a comma-separated string
+                    }
+                    tvTags.setText(tagsStr);
                     Timestamp ts = doc.getTimestamp("updatedAt");
                     if (ts != null) {
                         String d = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(ts.toDate());
@@ -92,9 +107,22 @@ public class ViewListingActivity extends AppCompatActivity {
                     }
 
                     @SuppressWarnings("unchecked")
-                    List<String> imgs = (List<String>) doc.get("imageUrls");
-                    String url = (imgs != null && !imgs.isEmpty()) ? imgs.get(0) : null;
-                    if (url != null) loadImageInto(ivImage, url);
+                    String url = null;
+                    Object im = doc.get("imageUrls");
+                    if (im instanceof java.util.List) {
+                        @SuppressWarnings("unchecked")
+                        java.util.List<String> imgs = (java.util.List<String>) im;
+                        if (imgs != null && !imgs.isEmpty()) url = imgs.get(0);
+                    }
+                    if (url == null) {
+                        String single = doc.getString("imageUrl");
+                        if (single != null && !single.isEmpty()) url = single;
+                    }
+                    if (url != null) {
+                        loadImageInto(ivImage, url);
+                    } else {
+                        ivImage.setImageResource(android.R.color.darker_gray);
+                    }
 
                     String ownerId = doc.getString("ownerId");
                     if (!TextUtils.isEmpty(ownerId)) loadSeller(ownerId);

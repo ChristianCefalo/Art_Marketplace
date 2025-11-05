@@ -26,6 +26,9 @@
         <activity android:name=".CreateListingActivity" />
         <activity android:name=".BrowseListingsActivity" />
         <activity android:name=".ListingDetailsActivity" />
+        <activity
+            android:name=".ViewListingActivity"
+            android:exported="false" />
 
     </application>
 </manifest>
