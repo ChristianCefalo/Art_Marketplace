@@ -2,7 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:layout_height="72dp"
+    android:layout_height="wrap_content"
+    android:minHeight="72dp"
     android:padding="12dp"
     android:gravity="center_vertical"
     android:background="?attr/selectableItemBackground">
@@ -10,9 +11,10 @@
     <!-- tiny thumbnail -->
     <ImageView
         android:id="@+id/ivThumb"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:scaleType="centerCrop"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
         android:contentDescription="@null"
         android:src="@android:color/darker_gray" />
 
@@ -47,8 +49,11 @@
             android:id="@+id/tvPrice"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="12sp"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#4A148C"
             android:singleLine="true" />
+
     </LinearLayout>
 
     <!-- overflow button (Edit / Delete) -->

@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -82,22 +83,14 @@ public class ViewListingActivity extends AppCompatActivity {
                     Double price = doc.getDouble("price");
                     tvPrice.setText(price == null ? "—" : "$" + String.format(Locale.US, "%.2f", price));
 
-                    @SuppressWarnings("unchecked")
-                    List<String> tags = (List<String>) doc.get("tags");
-                    tvTags.setText(tags == null || tags.isEmpty() ? "" : TextUtils.join(", ", tags));
+
+
 
                     String desc = doc.getString("description");
                     tvDesc.setText(desc == null ? "" : desc);
-                    String tagsStr = "";
-                    Object t = doc.get("tags");
-                    if (t instanceof java.util.List) {
-                        @SuppressWarnings("unchecked")
-                        java.util.List<String> tagsList = (java.util.List<String>) t;
-                        tagsStr = (tagsList == null || tagsList.isEmpty()) ? "" : android.text.TextUtils.join(", ", tagsList);
-                    } else if (t instanceof String) {
-                        tagsStr = ((String) t).trim(); // already a comma-separated string
-                    }
-                    tvTags.setText(tagsStr);
+
+
+                    tvTags.setText(resolveTags(doc.get("tags")));
                     Timestamp ts = doc.getTimestamp("updatedAt");
                     if (ts != null) {
                         String d = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(ts.toDate());
@@ -106,7 +99,7 @@ public class ViewListingActivity extends AppCompatActivity {
                         tvUpdatedAt.setText("");
                     }
 
-                    @SuppressWarnings("unchecked")
+
                     String url = null;
                     Object im = doc.get("imageUrls");
                     if (im instanceof java.util.List) {
@@ -180,6 +173,34 @@ public class ViewListingActivity extends AppCompatActivity {
                 if (ready != null) target.setImageBitmap(ready);
             });
         });
+    }
+    private static String resolveTags(@Nullable Object raw) {
+        if (raw instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Object> rawList = (List<Object>) raw;
+            List<String> parts = new ArrayList<>();
+            for (Object o : rawList) {
+                if (o instanceof String) {
+                    String v = ((String) o).trim();
+                    if (!v.isEmpty()) parts.add(v);
+                }
+            }
+            return parts.isEmpty() ? "" : TextUtils.join(", ", parts);
+        }
+
+        if (raw instanceof String) {
+            String s = ((String) raw).trim();
+            if (s.isEmpty()) return "";
+            String[] tokens = s.split("\\s*,\\s*");
+            List<String> parts = new ArrayList<>();
+            for (String token : tokens) {
+                String v = token.trim();
+                if (!v.isEmpty()) parts.add(v);
+            }
+            return parts.isEmpty() ? "" : TextUtils.join(", ", parts);
+        }
+
+        return "";
     }
 }
 

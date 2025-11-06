@@ -43,7 +43,7 @@ public class ProviderHomeActivity extends AppCompatActivity {
         rv.setLayoutManager(new LinearLayoutManager(this));
 
         adapter = new ListingsAdapter(new ArrayList<>(),
-                doc -> ViewListingActivity.launch(this, doc.getId()),  // tap → view details
+                doc -> ListingDetailsActivity.launch(this, doc.getId()),  // tap → view details
                 this::deleteDoc);
         rv.setAdapter(adapter);
 

@@ -18,7 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 
 public class ListingDetailsActivity extends AppCompatActivity {
@@ -61,16 +61,16 @@ public class ListingDetailsActivity extends AppCompatActivity {
                     if (!d.exists()) { finish(); return; }
                     String title = d.getString("title");
                     Double price = d.getDouble("price");
-                    //List<String> tags = (List<String>) d.get("tags");
-                    List<String> tags = Arrays.asList(Objects.requireNonNull(d.getString("tags")).split("\\s*,\\s*"));
+                    List<String> tags = resolveTags(d.get("tags"));
                     String desc = d.getString("description");
                     String ownerId = d.getString("ownerId");
-                    //List<String> imgs = (List<String>) d.get("imageUrls");
-                    String imgs = d.getString("imageUrls");
+                    String imageUrl = resolveImageUrl(d.get("imageUrl"), d.get("imageUrls"));
                     tvTitle.setText(title == null ? "Untitled" : title);
                     tvPrice.setText(price == null ? "" :
                             "$" + String.format(java.util.Locale.US, "%.2f", price));
-                    tvTags.setText(tags == null ? "" : android.text.TextUtils.join(", ", tags));
+                    tvTags.setText((tags == null || tags.isEmpty())
+                            ? ""
+                            : android.text.TextUtils.join(", ", tags));
                     tvDesc.setText(desc == null ? "" : desc);
 
                     if (ownerId != null) {
@@ -81,19 +81,77 @@ public class ListingDetailsActivity extends AppCompatActivity {
                                 });
                     }
 
-                    if (imgs != null && !imgs.isEmpty()) {
-                        String url = imgs;
+                    if (imageUrl != null && !imageUrl.isEmpty()) {
                         // very small loader without libs
                         Executors.newSingleThreadExecutor().execute(() -> {
+                            HttpURLConnection conn = null;
                             try {
-                                HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
-                                c.connect();
-                                Bitmap b = BitmapFactory.decodeStream(c.getInputStream());
-                                runOnUiThread(() -> iv.setImageBitmap(b));
-                            } catch (Exception ignored) {}
+                                conn = (HttpURLConnection) new URL(imageUrl).openConnection();
+                                conn.setConnectTimeout(5000);
+                                conn.setReadTimeout(7000);
+                                conn.connect();
+                                try (java.io.InputStream is = conn.getInputStream()) {
+                                    Bitmap b = BitmapFactory.decodeStream(is);
+                                    runOnUiThread(() -> iv.setImageBitmap(b));
+                                }
+                            } catch (Exception ignored) {
+                            } finally {
+                                if (conn != null) conn.disconnect();
+                            }
                         });
                     }
                 });
+    }
+    private static List<String> resolveTags(@Nullable Object raw) {
+        if (raw instanceof List) {
+            List<?> list = (List<?>) raw;
+            List<String> cleaned = new ArrayList<>();
+            for (Object o : list) {
+                if (o instanceof String) {
+                    String s = ((String) o).trim();
+                    if (!s.isEmpty()) cleaned.add(s);
+                }
+            }
+            if (!cleaned.isEmpty()) {
+                return cleaned;
+            }
+            return null;
+        }
+        if (raw instanceof String) {
+            String s = ((String) raw).trim();
+            if (!s.isEmpty()) {
+                return Arrays.asList(s.split("\\s*,\\s*"));
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private static String resolveImageUrl(@Nullable Object single, @Nullable Object multiple) {
+        if (single instanceof String && !((String) single).trim().isEmpty()) {
+            return ((String) single).trim();
+        }
+
+        if (multiple instanceof List) {
+            List<?> list = (List<?>) multiple;
+            for (Object o : list) {
+                if (o instanceof String && !((String) o).trim().isEmpty()) {
+                    return ((String) o).trim();
+                }
+            }
+        } else if (multiple instanceof String) {
+            String s = (String) multiple;
+            if (!s.trim().isEmpty()) {
+                String[] parts = s.split("\\s*,\\s*");
+                for (String part : parts) {
+                    if (!part.trim().isEmpty()) {
+                        return part.trim();
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 }
 
