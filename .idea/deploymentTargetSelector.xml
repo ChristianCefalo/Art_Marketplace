@@ -9,7 +9,7 @@
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/Users/robintreier/.android/avd/Medium_Phone.avd" />
             </handle>
-            <Snapshot name="snap_2025-10-17_13-51-44" path="$USER_HOME$/.android/avd/Medium_Phone.avd/snapshots/snap_2025-10-17_13-51-44" />
+            <Snapshot name="snap_2025-10-17_13-51-44" path="C:\Users\Basedanon\.android\avd\Medium_Phone.avd\snapshots\snap_2025-10-17_13-51-44" />
           </Target>
         </DropdownSelection>
         <DialogSelection />

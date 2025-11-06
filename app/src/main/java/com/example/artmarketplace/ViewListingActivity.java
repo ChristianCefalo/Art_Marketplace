@@ -18,12 +18,18 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ViewListingActivity extends AppCompatActivity {
+    public static void launch(android.content.Context c, String id) {
+        android.content.Intent i = new android.content.Intent(c, ViewListingActivity.class);
+        i.putExtra("LISTING_ID", id);
+        c.startActivity(i);
+    }
 
     private FirebaseFirestore db;
 
@@ -66,6 +72,7 @@ public class ViewListingActivity extends AppCompatActivity {
     }
 
     private void loadListing() {
+        android.util.Log.d("ViewListing", "Opening listing: " + listingId);
         db.collection("listings").document(listingId).get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) { Toast.makeText(this, "Listing not found", Toast.LENGTH_LONG).show(); finish(); return; }
@@ -76,13 +83,14 @@ public class ViewListingActivity extends AppCompatActivity {
                     Double price = doc.getDouble("price");
                     tvPrice.setText(price == null ? "—" : "$" + String.format(Locale.US, "%.2f", price));
 
-                    @SuppressWarnings("unchecked")
-                    List<String> tags = (List<String>) doc.get("tags");
-                    tvTags.setText(tags == null || tags.isEmpty() ? "" : TextUtils.join(", ", tags));
+
+
 
                     String desc = doc.getString("description");
                     tvDesc.setText(desc == null ? "" : desc);
 
+
+                    tvTags.setText(resolveTags(doc.get("tags")));
                     Timestamp ts = doc.getTimestamp("updatedAt");
                     if (ts != null) {
                         String d = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US).format(ts.toDate());
@@ -91,10 +99,23 @@ public class ViewListingActivity extends AppCompatActivity {
                         tvUpdatedAt.setText("");
                     }
 
-                    @SuppressWarnings("unchecked")
-                    List<String> imgs = (List<String>) doc.get("imageUrls");
-                    String url = (imgs != null && !imgs.isEmpty()) ? imgs.get(0) : null;
-                    if (url != null) loadImageInto(ivImage, url);
+
+                    String url = null;
+                    Object im = doc.get("imageUrls");
+                    if (im instanceof java.util.List) {
+                        @SuppressWarnings("unchecked")
+                        java.util.List<String> imgs = (java.util.List<String>) im;
+                        if (imgs != null && !imgs.isEmpty()) url = imgs.get(0);
+                    }
+                    if (url == null) {
+                        String single = doc.getString("imageUrl");
+                        if (single != null && !single.isEmpty()) url = single;
+                    }
+                    if (url != null) {
+                        loadImageInto(ivImage, url);
+                    } else {
+                        ivImage.setImageResource(android.R.color.darker_gray);
+                    }
 
                     String ownerId = doc.getString("ownerId");
                     if (!TextUtils.isEmpty(ownerId)) loadSeller(ownerId);
@@ -152,6 +173,34 @@ public class ViewListingActivity extends AppCompatActivity {
                 if (ready != null) target.setImageBitmap(ready);
             });
         });
+    }
+    private static String resolveTags(@Nullable Object raw) {
+        if (raw instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<Object> rawList = (List<Object>) raw;
+            List<String> parts = new ArrayList<>();
+            for (Object o : rawList) {
+                if (o instanceof String) {
+                    String v = ((String) o).trim();
+                    if (!v.isEmpty()) parts.add(v);
+                }
+            }
+            return parts.isEmpty() ? "" : TextUtils.join(", ", parts);
+        }
+
+        if (raw instanceof String) {
+            String s = ((String) raw).trim();
+            if (s.isEmpty()) return "";
+            String[] tokens = s.split("\\s*,\\s*");
+            List<String> parts = new ArrayList<>();
+            for (String token : tokens) {
+                String v = token.trim();
+                if (!v.isEmpty()) parts.add(v);
+            }
+            return parts.isEmpty() ? "" : TextUtils.join(", ", parts);
+        }
+
+        return "";
     }
 }
 
